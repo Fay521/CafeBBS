@@ -1,0 +1,73 @@
+package com.bettafish.flarent.data
+
+import com.bettafish.flarent.models.Discussion
+import com.bettafish.flarent.models.Post
+import com.bettafish.flarent.models.PostReactions
+import com.bettafish.flarent.models.request.PostsRequest
+import com.bettafish.flarent.network.FlarumService
+
+class PostsRepositoryImpl(private val service: FlarumService): PostsRepository {
+    override suspend fun fetchPosts(request: PostsRequest)
+            = service.getPosts(request.toQueryMap())
+
+    override suspend fun sendPost(discussionId: String, content: String) : Post {
+        val post = Post().apply {
+            id = String()
+            this.content = content
+            necrobumping = true
+            discussion = Discussion().apply { id = discussionId } }
+        return service.sendPost(post)
+    }
+
+    override suspend fun editPost(postId: String, content: String) : Post {
+        val post = Post().apply {
+            id = postId
+            this.content = content }
+        return service.patchPost(postId, post)
+    }
+
+    override suspend fun votePost(postId: String, isUpvoted: Boolean, isDownvoted: Boolean) : Post {
+        val request = mapOf("data" to mapOf(
+            "type" to "posts",
+            "attributes" to listOf(isUpvoted, isDownvoted, "vote"),
+            "id" to postId,
+            ),
+        )
+        return service.votePost(postId,request)
+    }
+
+    override suspend fun likePost(postId: String, isLiked: Boolean) : Post {
+        val request = mapOf("data" to mapOf(
+            "type" to "posts",
+            "attributes" to mapOf("isLiked" to isLiked),
+            "id" to postId,
+        ))
+        return service.patchPost(postId, request)
+    }
+
+    override suspend fun reactPost(postId: String, reactionId: String) : Post {
+        val request = mapOf("data" to mapOf(
+            "type" to "posts",
+            "attributes" to mapOf("reaction" to reactionId),
+            "id" to postId,
+        ),)
+        return service.reactPost(postId,request)
+    }
+
+    override suspend fun fetchReactions(postId: String): List<PostReactions>{
+        return service.getReactions(postId)
+    }
+
+    override suspend fun deletePost(postId: String) {
+        service.deletePost(postId)
+    }
+
+    override suspend fun hidePost(postId: String): Post {
+        val request = mapOf("data" to mapOf(
+            "type" to "posts",
+            "id" to postId,
+            "attributes" to mapOf("isHidden" to true)
+        ))
+        return service.patchPost(postId, request)
+    }
+}

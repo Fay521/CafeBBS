@@ -1,0 +1,136 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization") version "2.0.21"
+    id("com.google.devtools.ksp")
+    id("kotlin-parcelize")
+}
+
+android {
+    namespace = "com.bettafish.flarent"
+
+    compileSdk {
+        version = release(37) {
+        }
+    }
+
+    defaultConfig {
+        applicationId = "cc.liht.bbs"
+        minSdk = 26
+        targetSdk = 36
+        versionCode = 1
+        versionName = "0.1"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    packaging {
+        resources {
+            excludes.add("META-INF/LICENSE-LGPL-2.1.txt")
+            excludes.add("META-INF/LICENSE-LGPL-3.txt")
+            excludes.add("META-INF/LICENSE-W3C-TEST")
+            excludes.add("META-INF/DEPENDENCIES")
+        }
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.lifecycle:lifecycle-process:2.8.7")
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
+    implementation(libs.androidx.navigation.common.ktx)
+    implementation(libs.androidx.compose.animation)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation("com.github.Gurupreet:FontAwesomeCompose:1.0.0")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.google.accompanist:accompanist-pager:0.36.0")
+    implementation("com.github.jasminb:jsonapi-converter:0.11")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.21.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
+    implementation("com.zmkn.jackson:kotlinx-datetime-jackson-module:1.0.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    implementation("androidx.paging:paging-runtime:3.5.0")
+    implementation("androidx.paging:paging-compose:3.5.0")
+    implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
+    implementation("androidx.datastore:datastore-preferences:1.2.1")
+
+    implementation(libs.multiplatform.markdown.renderer)
+    implementation(libs.multiplatform.markdown.renderer.m3)
+    implementation(libs.multiplatform.markdown.renderer.coil3)
+    implementation(libs.multiplatform.markdown.renderer.code)
+    implementation("dev.snipme:highlights:1.1.0")
+
+    implementation("io.github.raamcosta.compose-destinations:core:2.3.0")
+    implementation("io.github.raamcosta.compose-destinations:bottom-sheet:2.3.0")
+    ksp("io.github.raamcosta.compose-destinations:ksp:2.3.0")
+
+    val scale_version = "1.1.1-beta.3"
+    implementation("com.jvziyaoyao.scale:image-viewer:$scale_version")
+
+    // Networking
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.okhttp3:okhttp:5.3.2")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.3.2")
+    implementation("com.squareup.retrofit2:converter-jackson:3.0.0")
+
+    // Koin (upgrade to 3.x)
+    implementation("io.insert-koin:koin-android:4.2.1")
+    implementation("io.insert-koin:koin-androidx-compose:4.2.1")
+
+    // Coroutines (upgrade)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.4.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
+
+    // Pusher
+    implementation("com.pusher:pusher-java-client:2.4.4")
+
+    val nav_version = "2.9.6"
+
+    // Jetpack Compose integration
+    implementation("androidx.navigation:navigation-compose:$nav_version")
+
+    // Views/Fragments integration
+    implementation("androidx.navigation:navigation-fragment:$nav_version")
+    implementation("androidx.navigation:navigation-ui:$nav_version")
+
+    // Feature module support for Fragments
+    implementation("androidx.navigation:navigation-dynamic-features-fragment:$nav_version")
+
+    // Testing Navigation
+    androidTestImplementation("androidx.navigation:navigation-testing:$nav_version")
+
+    // JSON serialization library, works with the Kotlin serialization plugin
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+}

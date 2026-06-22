@@ -1,0 +1,214 @@
+package com.bettafish.flarent
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.navigation.ModalBottomSheetLayout
+import androidx.compose.material.navigation.rememberBottomSheetNavigator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.unit.IntOffset
+import androidx.core.content.ContextCompat
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.plusAssign
+import com.bettafish.flarent.ui.theme.AppThemeMode
+import com.bettafish.flarent.ui.theme.FlarentTheme
+
+import com.bettafish.flarent.ui.widgets.GlobalImagePreviewerProvider
+import com.bettafish.flarent.utils.Analytics
+import com.bettafish.flarent.utils.AppUriHandler
+import com.bettafish.flarent.utils.appSettings
+import com.bettafish.flarent.utils.collectPreferenceAsState
+import com.bettafish.flarent.utils.dataStore
+import com.ramcosta.composedestinations.DestinationsNavHost
+import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
+import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.generated.destinations.DiscussionDetailPageDestination
+import com.ramcosta.composedestinations.generated.destinations.LoginPageDestination
+import com.ramcosta.composedestinations.generated.destinations.PostBottomSheetDestination
+import com.ramcosta.composedestinations.generated.destinations.UserProfilePageDestination
+import com.ramcosta.composedestinations.spec.Direction
+import com.ramcosta.composedestinations.utils.toDestinationsNavigator
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import okhttp3.HttpUrl.Companion.toHttpUrl
+
+class MainActivity : ComponentActivity() {
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+                showNotificationRationaleDialog()
+            }
+        }
+    }
+
+    private fun showNotificationRationaleDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.notification_permission_title)
+            .setMessage(R.string.notification_permission_rationale)
+            .setPositiveButton(R.string.go_to_settings) { _, _ ->
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+                startActivity(intent)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    @ExperimentalMaterial3Api
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        setContent {
+            val themeModeValue by App.INSTANCE.dataStore.collectPreferenceAsState(
+                key = stringPreferencesKey(AppThemeMode.PreferenceKey),
+                defaultValue = AppThemeMode.SYSTEM.value
+            )
+            val themeMode = AppThemeMode.fromPreference(themeModeValue)
+            val isDarkTheme = when (themeMode) {
+                AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+                AppThemeMode.LIGHT -> false
+                AppThemeMode.DARK -> true
+                AppThemeMode.CAFE_LIGHT -> false
+                AppThemeMode.CAFE_DARK -> true
+            }
+
+            SideEffect {
+                val systemBarStyle = if (isDarkTheme) {
+                    SystemBarStyle.dark(Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(
+                    statusBarStyle = systemBarStyle,
+                    navigationBarStyle = systemBarStyle
+                )
+            }
+
+            FlarentTheme(themeMode = themeMode) {
+                FlarentApp()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@Composable
+@ExperimentalMaterial3Api
+fun FlarentApp() {
+    val navController = rememberNavController()
+    val bottomSheetNavigator = rememberBottomSheetNavigator()
+    navController.navigatorProvider += bottomSheetNavigator
+    val navigator = navController.toDestinationsNavigator()
+    val defaultUriHandler = LocalUriHandler.current
+
+    val uriHandler = AppUriHandler(navigator, defaultUriHandler)
+
+    GlobalImagePreviewerProvider {
+        CompositionLocalProvider(LocalUriHandler provides uriHandler) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background, // 背景色
+                contentColor = MaterialTheme.colorScheme.onBackground // 自动传递给子组件的文字颜色
+            ){
+                ModalBottomSheetLayout(
+                    bottomSheetNavigator = bottomSheetNavigator,
+                    sheetBackgroundColor = MaterialTheme.colorScheme.surface,
+                    sheetContentColor = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxSize()
+                ){
+                    val start: Direction = if(App.INSTANCE.appSettings.forum == null || App.INSTANCE.appSettings.token == null){
+                        LoginPageDestination
+                    }
+                    else{
+                        NavGraphs.root.defaultStartDirection
+                    }
+                    DestinationsNavHost(
+                        navController = navController,
+                        modifier = Modifier.fillMaxSize(),
+                        navGraph = NavGraphs.root,
+                        start = start,
+                        defaultTransitions = SlideTransitions
+                    )
+                }
+            }
+
+        }
+    }
+}
+object SlideTransitions : NavHostAnimatedDestinationStyle() {
+    private val AnimationSpec = tween<IntOffset>(durationMillis = 300, easing = FastOutSlowInEasing)
+
+    override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+        slideIntoContainer(
+            AnimatedContentTransitionScope.SlideDirection.Start,
+            animationSpec = AnimationSpec,
+            initialOffset = { it }
+        )
+    }
+
+    override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+        slideOutOfContainer(
+            AnimatedContentTransitionScope.SlideDirection.End,
+            animationSpec = AnimationSpec,
+            targetOffset = { -it }
+        )
+    }
+
+    override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+        slideIntoContainer(
+            AnimatedContentTransitionScope.SlideDirection.Start,
+            animationSpec = AnimationSpec,
+            initialOffset = { -it }
+        )
+    }
+
+    override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+        slideOutOfContainer(
+            AnimatedContentTransitionScope.SlideDirection.End,
+            animationSpec = AnimationSpec,
+            targetOffset = { it }
+        )
+    }
+
+}

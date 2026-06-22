@@ -1,0 +1,104 @@
+package com.bettafish.flarent.models
+
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.github.jasminb.jsonapi.annotations.Id
+import com.github.jasminb.jsonapi.annotations.Relationship
+import com.github.jasminb.jsonapi.annotations.Type
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
+import java.time.ZonedDateTime
+
+
+@Serializable
+@Type("posts")
+class Post : Section
+{
+    @Id
+    lateinit var id: String
+
+    @JsonProperty("contentType")
+    var contentType: String? = null
+
+    @JsonProperty("content")
+    @Contextual
+    var content: Any? = null
+
+    internal var text: String? = null
+
+    @JsonProperty("contentHtml")
+    val contentHtml: String? = null
+
+    @JsonProperty("number")
+    var number: Int? = null
+
+    @JsonProperty("votes")
+    var votes: Int? = null
+
+    @JsonProperty("hasUpvoted")
+    var hasUpvoted: Boolean? = null
+
+    @JsonProperty("hasDownvoted")
+    var hasDownvoted: Boolean? = null
+
+    @JsonProperty("likesCount")
+    var likesCount: Int? = null
+
+    @JsonProperty("canLike")
+    var canLike: Boolean? = null
+
+    @JsonProperty("isLiked")
+    var isLiked: Boolean? = null
+
+    @JsonProperty("canVote")
+    var canVote: Boolean? = null
+
+    @JsonProperty("seeVoters")
+    var seeVoters: Boolean? = null
+
+    @JsonProperty("canEdit")
+    var canEdit: Boolean? = null
+
+    @JsonProperty("canReact")
+    var canReact: Boolean? = null
+
+    @JsonProperty("reactionCounts")
+    var reactionCounts: Map<String, Int>? = null
+
+    @JsonProperty("userReactionIdentifier")
+    var userReactionIdentifier: String? = null
+
+    @JsonProperty("createdAt")
+    @Contextual
+    var createdAt: ZonedDateTime? = null
+
+    @JsonProperty("editedAt")
+    @Contextual
+    var editedAt: ZonedDateTime? = null
+
+    @JsonProperty("fof-necrobumping")
+    var necrobumping: Boolean? = null
+
+    @JsonProperty("isHidden")
+    var isHidden: Boolean? = null
+
+    @JsonProperty("canStartPoll")
+    var canStartPoll: Boolean? = null
+
+    @Relationship("polls")
+    var polls: List<Poll>? = null
+
+    @Relationship("upvotes")
+    var upvotes: List<User>? = null
+
+    @Relationship("downvotes")
+    var downvotes: List<User>? = null
+
+    @Relationship("likes")
+    var likes: List<User>? = null
+
+    @Relationship("user")
+    var user: User? = null
+
+    @Relationship("discussion")
+    var discussion: Discussion? = null
+}

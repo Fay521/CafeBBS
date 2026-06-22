@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:bbs.liht.cc)",
+      "PowerShell($headers = @{'Accept'='application/vnd.api+json; charset=utf-8'}; try { $r = Invoke-RestMethod -Uri 'https://bbs.liht.cc/api' -Method Get -Headers $headers -TimeoutSec 30; $r | ConvertTo-Json -Depth 10 } catch { \"Error: $_\" })",
+      "PowerShell($headers = @{'Accept'='application/vnd.api+json; charset=utf-8'}; try { $r = Invoke-RestMethod -Uri 'https://bbs.liht.cc/api/extensions' -Method Get -Headers $headers -TimeoutSec 30; $r | ConvertTo-Json -Depth 10 } catch { \"Error: $_\" })",
+      "PowerShell(Copy-Item *)",
+      "PowerShell($git = \"C:\\\\Users\\\\Light\\\\AppData\\\\Local\\\\GitHubDesktop\\\\app-3.5.8\\\\resources\\\\app\\\\git\\\\cmd\\\\git.exe\"; & $git config --global user.name; & $git config --global user.email; Write-Output \"---\"; if \\(Get-Command gh -ErrorAction SilentlyContinue\\) { gh auth status } else { Write-Output \"gh CLI not in PATH, checking for GitHub Desktop bundled gh...\"; $ghPath = \"C:\\\\Users\\\\Light\\\\AppData\\\\Local\\\\GitHubDesktop\\\\app-3.5.8\\\\resources\\\\app\\\\git\\\\mingw64\\\\bin\\\\gh.exe\"; if \\(Test-Path $ghPath\\) { Write-Output \"FOUND bundled gh at: $ghPath\" } else { Write-Output \"No gh found\" } })"
+    ]
+  }
+}

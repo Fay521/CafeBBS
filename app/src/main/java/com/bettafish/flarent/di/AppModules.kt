@@ -1,0 +1,219 @@
+package com.bettafish.flarent.di
+
+import com.bettafish.flarent.App
+import com.bettafish.flarent.BuildConfig
+import com.bettafish.flarent.config.ForumConfig
+import com.bettafish.flarent.data.DiscussionsRepository
+import com.bettafish.flarent.data.DiscussionsRepositoryImpl
+import com.bettafish.flarent.data.FileRepository
+import com.bettafish.flarent.data.FileRepositoryImpl
+import com.bettafish.flarent.data.ForumRepository
+import com.bettafish.flarent.data.ForumRepositoryImpl
+import com.bettafish.flarent.data.MessagesRepository
+import com.bettafish.flarent.data.MessagesRepositoryImpl
+import com.bettafish.flarent.data.NotificationsRepository
+import com.bettafish.flarent.data.NotificationsRepositoryImpl
+import com.bettafish.flarent.data.PollsRepository
+import com.bettafish.flarent.data.PollsRepositoryImpl
+import com.bettafish.flarent.data.PostsRepository
+import com.bettafish.flarent.data.PostsRepositoryImpl
+import com.bettafish.flarent.data.TagsRepository
+import com.bettafish.flarent.data.TagsRepositoryImpl
+import com.bettafish.flarent.data.UsersRepository
+import com.bettafish.flarent.data.UsersRepositoryImpl
+import com.bettafish.flarent.models.Discussion
+import com.bettafish.flarent.models.File
+import com.bettafish.flarent.models.Forum
+import com.bettafish.flarent.models.Message
+import com.bettafish.flarent.models.MessageDialog
+import com.bettafish.flarent.models.Notification
+import com.bettafish.flarent.models.Poll
+import com.bettafish.flarent.models.PollOption
+import com.bettafish.flarent.models.Post
+import com.bettafish.flarent.models.PostReactions
+import com.bettafish.flarent.models.Reaction
+import com.bettafish.flarent.models.Tag
+import com.bettafish.flarent.models.User
+import com.bettafish.flarent.models.navigation.DiscussionListNavArgs
+import com.bettafish.flarent.network.FlarumService
+import com.bettafish.flarent.ui.pages.account.AccountViewModel
+import com.bettafish.flarent.ui.pages.account.EditProfileViewModel
+import com.bettafish.flarent.ui.pages.account.login.LoginViewModel
+import com.bettafish.flarent.ui.pages.detail.DiscussionDetailViewModel
+import com.bettafish.flarent.ui.pages.discussionList.DiscussionListViewModel
+import com.bettafish.flarent.ui.pages.discussionList.NewDiscussionViewModel
+import com.bettafish.flarent.ui.pages.home.HomeViewModel
+import com.bettafish.flarent.ui.pages.messages.ConversationViewModel
+import com.bettafish.flarent.ui.pages.messages.MessagesViewModel
+import com.bettafish.flarent.ui.pages.like.LikesViewModel
+import com.bettafish.flarent.ui.pages.notification.NotificationsViewModel
+import com.bettafish.flarent.ui.pages.post.PostBottomSheetViewModel
+import com.bettafish.flarent.ui.pages.reaction.PostReactionsViewModel
+import com.bettafish.flarent.ui.pages.reply.FileViewModel
+import com.bettafish.flarent.ui.pages.reply.ReplyViewModel
+import com.bettafish.flarent.ui.pages.tagList.TagListViewModel
+import com.bettafish.flarent.ui.pages.user.UserProfileViewModel
+import com.bettafish.flarent.ui.pages.vote.VotesViewModel
+import com.bettafish.flarent.ui.pages.welcome.WelcomeViewModel
+import com.bettafish.flarent.ui.widgets.DiscussionItemViewModel
+import com.bettafish.flarent.ui.widgets.PollViewModel
+import com.bettafish.flarent.ui.widgets.post.PostItemViewModel
+import com.bettafish.flarent.utils.appSettings
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.github.jasminb.jsonapi.retrofit.JSONAPIConverterFactory
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.Response
+import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.module
+import retrofit2.Retrofit
+import retrofit2.converter.jackson.JacksonConverterFactory
+import java.util.concurrent.TimeUnit
+import kotlinx.serialization.json.Json
+
+val networkModule = module {
+    single {
+        val logging = HttpLoggingInterceptor().apply {
+            level =
+                if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+        }
+        OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .addInterceptor(AuthInterceptor())
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    single {
+        jacksonObjectMapper().apply {
+            // register modules if needed
+        }
+    }
+
+    single {
+        val objectMapper = ObjectMapper()
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        objectMapper.registerModule(JavaTimeModule())
+        objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
+        val resourceConverter = com.github.jasminb.jsonapi.ResourceConverter(
+            objectMapper,
+            Discussion::class.java,
+            Post::class.java,
+            Tag::class.java,
+            User::class.java,
+            File::class.java,
+            Forum::class.java,
+            Reaction::class.java,
+            PostReactions::class.java,
+            Notification::class.java,
+            Poll::class.java,
+            PollOption::class.java,
+            MessageDialog::class.java,
+            Message::class.java
+        )
+        resourceConverter.enableDeserializationOption(com.github.jasminb.jsonapi.DeserializationFeature.ALLOW_UNKNOWN_TYPE_IN_RELATIONSHIP)
+        resourceConverter.enableDeserializationOption(com.github.jasminb.jsonapi.DeserializationFeature.ALLOW_UNKNOWN_INCLUSIONS)
+        resourceConverter.disableDeserializationOption(com.github.jasminb.jsonapi.DeserializationFeature.REQUIRE_RESOURCE_ID)
+        resourceConverter.disableSerializationOption(com.github.jasminb.jsonapi.SerializationFeature.INCLUDE_ID)
+        Retrofit.Builder()
+            .client(get())
+            .baseUrl(ForumConfig.baseUrl)
+            .addConverterFactory(
+                JSONAPIConverterFactory(resourceConverter)
+            )
+            .addConverterFactory(
+                JacksonConverterFactory.create()
+            )
+            .build()
+    }
+
+    single {
+        Json {
+            ignoreUnknownKeys = true
+        }
+    }
+
+    single { get<Retrofit>().create(FlarumService::class.java) }
+}
+
+val repositoryModule = module {
+    single<DiscussionsRepository> { DiscussionsRepositoryImpl(get()) }
+    single<TagsRepository> { TagsRepositoryImpl(get()) }
+    single<PostsRepository> { PostsRepositoryImpl(get()) }
+    single<UsersRepository> { UsersRepositoryImpl(get()) }
+    single<ForumRepository> { ForumRepositoryImpl(get()) }
+    single<NotificationsRepository> { NotificationsRepositoryImpl(get()) }
+    single<FileRepository> { FileRepositoryImpl(get(), context = androidContext()) }
+    single<PollsRepository> { PollsRepositoryImpl(get()) }
+    single<MessagesRepository> { MessagesRepositoryImpl(get()) }
+}
+
+val viewModelModule = module {
+    viewModel { (filter: Map<String, String>?) ->
+        DiscussionListViewModel(get(), filter)
+    }
+    viewModel { NewDiscussionViewModel(get(), get()) }
+    viewModel { TagListViewModel(get()) }
+    viewModel { AccountViewModel(get()) }
+    viewModel { (id: String, targetPosition: Int) ->
+        DiscussionDetailViewModel(
+            get(),
+            get(),
+            id,
+            targetPosition
+        )
+    }
+    viewModel { (userName: String) -> UserProfileViewModel(userName, get(), get()) }
+    viewModel { LoginViewModel(get(), androidContext()) }
+    viewModel { EditProfileViewModel(get()) }
+    viewModel { FileViewModel(get()) }
+    viewModel { (postId: String) -> PostReactionsViewModel(get(), postId) }
+    viewModel { WelcomeViewModel(get(), get()) }
+    viewModel { (id: String, initDiscussion: Discussion?) ->
+        DiscussionItemViewModel(
+            id,
+            initDiscussion,
+            get()
+        )
+    }
+    viewModel { (id: String, initPost: Post?) -> PostItemViewModel(id, initPost, get()) }
+    viewModel { (id: String, postId: String?, content: String?) ->
+        ReplyViewModel(
+            discussionId = id,
+            postId = postId,
+            initContent = content,
+            get()
+        )
+    }
+    viewModel { (id: String) -> VotesViewModel(get(), id) }
+    viewModel { NotificationsViewModel(get()) }
+    viewModel { HomeViewModel(get()) }
+    viewModel { PostBottomSheetViewModel(get()) }
+    viewModel { (id: String) -> LikesViewModel(get(), id) }
+    viewModel { (pollId: String, initPoll: Poll?) ->
+        PollViewModel(pollId, initPoll, get())
+    }
+    viewModel { MessagesViewModel(get()) }
+    viewModel { ConversationViewModel(get()) }
+}
+
+class AuthInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val originalRequest = chain.request()
+        val token = App.INSTANCE.appSettings.token
+
+        val requestWithToken = token?.let {
+            originalRequest.newBuilder()
+                .header("Authorization", "Token $it").build()
+        } ?: originalRequest
+
+        return chain.proceed(requestWithToken)
+    }
+}
