@@ -34,3 +34,7 @@ LightCafe 社区（bbs.liht.cc）的 Android 客户端，基于 [Flarent](https:
 ## 许可
 
 GPL-3.0 License
+
+---
+
+> 📝 本 README 由 AI 辅助生成。

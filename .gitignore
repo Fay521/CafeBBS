@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/androidstudio,android
 # Edit at https://www.toptal.com/developers/gitignore?templates=androidstudio,android
 
+# Claude Code local settings
+.claude/settings.local.json
+
 ### Android ###
 # Gradle files
 .gradle/
